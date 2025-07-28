@@ -208,6 +208,16 @@
       box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
     }
     
+    #importBtn {
+      background: linear-gradient(45deg, #f59e0b, #d97706);
+      border-color: #f59e0b;
+    }
+    
+    #importBtn:not(:disabled):hover {
+      background: #f59e0b;
+      box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
+    }
+    
     #notif {
       color: #22c55e;
       font-size: 16px;
@@ -262,13 +272,62 @@
       font-size: 16px;
       border: 2px solid #38bdf8;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      cursor: default;
+      cursor: pointer;
       backdrop-filter: blur(5px);
+      position: relative;
     }
     
     .beat-box:hover {
       transform: scale(1.05);
       box-shadow: 0 4px 15px rgba(56, 189, 248, 0.3);
+    }
+    
+    .beat-box .beat-actions {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      display: none;
+      gap: 4px;
+    }
+    
+    .beat-box:hover .beat-actions {
+      display: flex;
+    }
+    
+    .beat-action-btn {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+      padding: 0;
+      margin: 0;
+      transition: all 0.2s ease;
+    }
+    
+    .edit-btn {
+      background: #f59e0b;
+      color: white;
+    }
+    
+    .edit-btn:hover {
+      background: #d97706;
+      transform: scale(1.1);
+    }
+    
+    .delete-btn {
+      background: #ef4444;
+      color: white;
+    }
+    
+    .delete-btn:hover {
+      background: #dc2626;
+      transform: scale(1.1);
     }
     
     .beat-box.active {
@@ -451,6 +510,8 @@
     <div class="action-buttons">
       <button id="markBtn" disabled>📍 Tandai Beat Ini</button>
       <button id="exportBtn">⬇️ Export JSON</button>
+      <button id="importBtn">📤 Import JSON</button>
+      <input type="file" id="importFile" accept=".json" style="display: none;" />
     </div>
 
     <div id="notif"></div>
@@ -471,6 +532,9 @@
 
     const notif = document.getElementById('notif');
     const exportBtn = document.getElementById('exportBtn');
+    const importBtn = document.getElementById('importBtn');
+    const importFile = document.getElementById('importFile');
+    
     exportBtn.addEventListener('click', () => {
       if (markedBeats.length === 0) {
         showNotification('Belum ada beat yang bisa diexport!', 'warning');
@@ -489,6 +553,41 @@
         URL.revokeObjectURL(url);
       }, 100);
       showNotification(`${markedBeats.length} beats berhasil diexport!`, 'success');
+    });
+
+    importBtn.addEventListener('click', () => {
+      importFile.click();
+    });
+
+    importFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const data = JSON.parse(event.target.result);
+          if (data.beats && Array.isArray(data.beats)) {
+            if (markedBeats.length > 0) {
+              if (confirm('Ini akan mengganti semua beat yang sudah ada. Lanjutkan?')) {
+                markedBeats = [...data.beats].sort((a, b) => a - b);
+                renderBeatBoxes(true);
+                showNotification(`${markedBeats.length} beats berhasil diimport!`, 'success');
+              }
+            } else {
+              markedBeats = [...data.beats].sort((a, b) => a - b);
+              renderBeatBoxes(true);
+              showNotification(`${markedBeats.length} beats berhasil diimport!`, 'success');
+            }
+          } else {
+            showNotification('Format file JSON tidak valid!', 'warning');
+          }
+        } catch (error) {
+          showNotification('Error membaca file JSON!', 'warning');
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = ''; // Reset input
     });
 
     function showNotification(message, type = 'success') {
@@ -530,22 +629,72 @@
           box.style.animationDelay = `${index * 0.1}s`;
           box.style.animation = 'fadeInUp 0.5s ease-out both';
           
-          // Add click to remove functionality
-          box.addEventListener('click', () => {
-            if (confirm(`Hapus beat ${beat}?`)) {
-              markedBeats = markedBeats.filter(b => b !== beat);
-              renderBeatBoxes(true); // Force re-render when removing
-              showNotification(`Beat ${beat} dihapus!`, 'warning');
-            }
+          // Create action buttons
+          const actionsDiv = document.createElement('div');
+          actionsDiv.className = 'beat-actions';
+          
+          const editBtn = document.createElement('button');
+          editBtn.className = 'beat-action-btn edit-btn';
+          editBtn.innerHTML = '✏️';
+          editBtn.title = 'Edit beat';
+          editBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            editBeat(beat, box);
           });
           
-          box.title = `Click untuk hapus beat ${beat}`;
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = 'beat-action-btn delete-btn';
+          deleteBtn.innerHTML = '×';
+          deleteBtn.title = 'Hapus beat';
+          deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteBeat(beat);
+          });
+          
+          actionsDiv.appendChild(editBtn);
+          actionsDiv.appendChild(deleteBtn);
+          box.appendChild(actionsDiv);
+          
+          box.title = `Beat ${beat} - Klik untuk edit atau hapus`;
           beatBoxes.appendChild(box);
         });
       }
       
       // Update classes without re-rendering
       updateBeatBoxStates();
+    }
+
+    function editBeat(oldBeat, boxElement) {
+      const newBeatValue = prompt(`Edit beat ${oldBeat}:`, oldBeat);
+      if (newBeatValue === null) return; // User cancelled
+      
+      const newBeat = parseInt(newBeatValue);
+      if (isNaN(newBeat) || newBeat <= 0) {
+        showNotification('Beat harus berupa angka positif!', 'warning');
+        return;
+      }
+      
+      if (newBeat === oldBeat) return; // No change
+      
+      if (markedBeats.includes(newBeat)) {
+        showNotification(`Beat ${newBeat} sudah ada!`, 'warning');
+        return;
+      }
+      
+      // Replace old beat with new beat
+      const index = markedBeats.indexOf(oldBeat);
+      markedBeats[index] = newBeat;
+      markedBeats.sort((a, b) => a - b);
+      renderBeatBoxes(true);
+      showNotification(`Beat ${oldBeat} diubah menjadi ${newBeat}!`, 'success');
+    }
+
+    function deleteBeat(beat) {
+      if (confirm(`Hapus beat ${beat}?`)) {
+        markedBeats = markedBeats.filter(b => b !== beat);
+        renderBeatBoxes(true);
+        showNotification(`Beat ${beat} dihapus!`, 'warning');
+      }
     }
 
     function updateBeatBoxStates() {
@@ -632,6 +781,10 @@
         e.preventDefault();
         exportBtn.click();
       }
+      if (e.code === 'KeyI' && e.ctrlKey) {
+        e.preventDefault();
+        importBtn.click();
+      }
     });
 
     // Autofocus BPM input on load
@@ -662,10 +815,14 @@
     <div style="margin-bottom: 10px;">
       <strong>Keyboard Shortcuts:</strong><br>
       <span style="color: #38bdf8;">Space</span> - Tandai beat &nbsp;|&nbsp; 
-      <span style="color: #38bdf8;">Ctrl+E</span> - Export JSON
+      <span style="color: #38bdf8;">Ctrl+E</span> - Export JSON &nbsp;|&nbsp;
+      <span style="color: #38bdf8;">Ctrl+I</span> - Import JSON
     </div>
     <div style="margin-bottom: 10px;">
       <strong>Mobile:</strong> Swipe up untuk tandai beat
+    </div>
+    <div style="margin-bottom: 10px;">
+      <strong>Beat Actions:</strong> Hover pada beat untuk edit (✏️) atau hapus (×)
     </div>
     &copy; 2025 by danyzaky
   </footer>
