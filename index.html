@@ -540,19 +540,25 @@
         showNotification('No beats to export!', 'warning');
         return;
       }
-      const data = JSON.stringify({ beats: markedBeats }, null, 2);
+      
+      const bpm = parseFloat(bpmInput.value) || 120; // Default to 120 if no BPM set
+      const data = JSON.stringify({ 
+        bpm: bpm,
+        beats: markedBeats 
+      }, null, 2);
+      
       const blob = new Blob([data], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'beat-marked.json';
+      a.download = `beat-marked-${bpm}bpm.json`;
       document.body.appendChild(a);
       a.click();
       setTimeout(() => {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       }, 100);
-      showNotification(`${markedBeats.length} beats exported successfully!`, 'success');
+      showNotification(`${markedBeats.length} beats exported with BPM ${bpm}!`, 'success');
     });
 
     importBtn.addEventListener('click', () => {
@@ -597,16 +603,51 @@
             return;
           }
           
+          // Check if BPM is included and valid
+          let importedBpm = null;
+          if (data.bpm) {
+            if (typeof data.bpm === 'number' && data.bpm > 0) {
+              importedBpm = data.bpm;
+            } else {
+              showNotification('⚠️ BPM must be a positive number! Using current BPM.', 'warning');
+            }
+          }
+          
+          let confirmMessage = `This will import ${data.beats.length} beats`;
+          if (importedBpm) {
+            confirmMessage += ` with BPM ${importedBpm}`;
+          }
           if (markedBeats.length > 0) {
-            if (confirm('This will replace all existing beats. Continue?')) {
+            confirmMessage += ' and replace all existing beats';
+          }
+          confirmMessage += '. Continue?';
+          
+          if (markedBeats.length > 0) {
+            if (confirm(confirmMessage)) {
               markedBeats = [...data.beats].sort((a, b) => a - b);
+              if (importedBpm) {
+                bpmInput.value = importedBpm;
+                updateMarkBtnState(); // Update button state with new BPM
+              }
               renderBeatBoxes(true);
-              showNotification(`${markedBeats.length} beats imported successfully! ✅`, 'success');
+              let successMsg = `${markedBeats.length} beats imported successfully!`;
+              if (importedBpm) {
+                successMsg += ` BPM set to ${importedBpm}.`;
+              }
+              showNotification(successMsg + ' ✅', 'success');
             }
           } else {
             markedBeats = [...data.beats].sort((a, b) => a - b);
+            if (importedBpm) {
+              bpmInput.value = importedBpm;
+              updateMarkBtnState();
+            }
             renderBeatBoxes(true);
-            showNotification(`${markedBeats.length} beats imported successfully! ✅`, 'success');
+            let successMsg = `${markedBeats.length} beats imported successfully!`;
+            if (importedBpm) {
+              successMsg += ` BPM set to ${importedBpm}.`;
+            }
+            showNotification(successMsg + ' ✅', 'success');
           }
         } catch (error) {
           showNotification('⚠️ Error reading JSON file! Check file format.', 'warning');
