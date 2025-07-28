@@ -508,7 +508,7 @@
     <div id="output">Beat: 0</div>
 
     <div class="action-buttons">
-      <button id="markBtn" disabled>📍 Tandai Beat Ini</button>
+      <button id="markBtn" disabled>📍 Mark This Beat</button>
       <button id="exportBtn">⬇️ Export JSON</button>
       <button id="importBtn">📤 Import JSON</button>
       <input type="file" id="importFile" accept=".json" style="display: none;" />
@@ -517,7 +517,7 @@
     <div id="notif"></div>
 
     <div class="beats-section">
-      <h3>📋 Daftar Beat Tertandai</h3>
+      <h3>📋 Marked Beat List</h3>
       <div id="beatBoxes"></div>
     </div>
   </div>
@@ -537,7 +537,7 @@
     
     exportBtn.addEventListener('click', () => {
       if (markedBeats.length === 0) {
-        showNotification('Belum ada beat yang bisa diexport!', 'warning');
+        showNotification('No beats to export!', 'warning');
         return;
       }
       const data = JSON.stringify({ beats: markedBeats }, null, 2);
@@ -552,7 +552,7 @@
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       }, 100);
-      showNotification(`${markedBeats.length} beats berhasil diexport!`, 'success');
+      showNotification(`${markedBeats.length} beats exported successfully!`, 'success');
     });
 
     importBtn.addEventListener('click', () => {
@@ -565,7 +565,7 @@
 
       // Check file size (max 1MB)
       if (file.size > 1024 * 1024) {
-        showNotification('⚠️ File terlalu besar! Maksimal 1MB.', 'warning');
+        showNotification('⚠️ File too large! Maximum 1MB.', 'warning');
         e.target.value = '';
         return;
       }
@@ -576,45 +576,45 @@
           const data = JSON.parse(event.target.result);
           
           if (!data.beats) {
-            showNotification('⚠️ File JSON harus memiliki property "beats"!', 'warning');
+            showNotification('⚠️ JSON file must have "beats" property!', 'warning');
             return;
           }
           
           if (!Array.isArray(data.beats)) {
-            showNotification('⚠️ Property "beats" harus berupa array!', 'warning');
+            showNotification('⚠️ "beats" property must be an array!', 'warning');
             return;
           }
           
           if (data.beats.length === 0) {
-            showNotification('⚠️ Array "beats" tidak boleh kosong!', 'warning');
+            showNotification('⚠️ "beats" array cannot be empty!', 'warning');
             return;
           }
           
           // Validate all beats are positive numbers
           const invalidBeats = data.beats.filter(beat => !Number.isInteger(beat) || beat <= 0);
           if (invalidBeats.length > 0) {
-            showNotification('⚠️ Semua beat harus berupa angka bulat positif!', 'warning');
+            showNotification('⚠️ All beats must be positive integers!', 'warning');
             return;
           }
           
           if (markedBeats.length > 0) {
-            if (confirm('Ini akan mengganti semua beat yang sudah ada. Lanjutkan?')) {
+            if (confirm('This will replace all existing beats. Continue?')) {
               markedBeats = [...data.beats].sort((a, b) => a - b);
               renderBeatBoxes(true);
-              showNotification(`${markedBeats.length} beats berhasil diimport! ✅`, 'success');
+              showNotification(`${markedBeats.length} beats imported successfully! ✅`, 'success');
             }
           } else {
             markedBeats = [...data.beats].sort((a, b) => a - b);
             renderBeatBoxes(true);
-            showNotification(`${markedBeats.length} beats berhasil diimport! ✅`, 'success');
+            showNotification(`${markedBeats.length} beats imported successfully! ✅`, 'success');
           }
         } catch (error) {
-          showNotification('⚠️ Error membaca file JSON! Periksa format file.', 'warning');
+          showNotification('⚠️ Error reading JSON file! Check file format.', 'warning');
         }
       };
       
       reader.onerror = () => {
-        showNotification('⚠️ Error membaca file!', 'warning');
+        showNotification('⚠️ Error reading file!', 'warning');
       };
       
       reader.readAsText(file);
@@ -648,7 +648,7 @@
       if (forceRender || markedBeats.length === 0 || beatBoxes.children.length !== markedBeats.length) {
         beatBoxes.innerHTML = '';
         if (markedBeats.length === 0) {
-          beatBoxes.innerHTML = '<span style="color:#64748b; font-style:italic; padding:20px; display:block;">Belum ada beat tertandai... Tekan tombol "Tandai Beat Ini" saat audio diputar</span>';
+          beatBoxes.innerHTML = '<span style="color:#64748b; font-style:italic; padding:20px; display:block;">No beats marked yet... Press "Mark This Beat" button while audio is playing</span>';
           return;
         }
         
@@ -676,7 +676,7 @@
           const deleteBtn = document.createElement('button');
           deleteBtn.className = 'beat-action-btn delete-btn';
           deleteBtn.innerHTML = '×';
-          deleteBtn.title = 'Hapus beat';
+          deleteBtn.title = 'Delete beat';
           deleteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             deleteBeat(beat);
@@ -686,7 +686,7 @@
           actionsDiv.appendChild(deleteBtn);
           box.appendChild(actionsDiv);
           
-          box.title = `Beat ${beat} - Klik untuk edit atau hapus`;
+          box.title = `Beat ${beat} - Click to edit or delete`;
           beatBoxes.appendChild(box);
         });
       }
@@ -701,20 +701,20 @@
       
       // Validation untuk input kosong
       if (newBeatValue.trim() === '') {
-        showNotification('⚠️ Beat tidak boleh kosong!', 'warning');
+        showNotification('⚠️ Beat cannot be empty!', 'warning');
         return;
       }
       
       const newBeat = parseInt(newBeatValue);
       if (isNaN(newBeat) || newBeat <= 0) {
-        showNotification('⚠️ Beat harus berupa angka positif!', 'warning');
+        showNotification('⚠️ Beat must be a positive number!', 'warning');
         return;
       }
       
       if (newBeat === oldBeat) return; // No change
       
       if (markedBeats.includes(newBeat)) {
-        showNotification(`⚠️ Beat ${newBeat} sudah ada!`, 'warning');
+        showNotification(`⚠️ Beat ${newBeat} already exists!`, 'warning');
         return;
       }
       
@@ -723,14 +723,14 @@
       markedBeats[index] = newBeat;
       markedBeats.sort((a, b) => a - b);
       renderBeatBoxes(true);
-      showNotification(`Beat ${oldBeat} diubah menjadi ${newBeat}! ✅`, 'success');
+      showNotification(`Beat ${oldBeat} changed to ${newBeat}! ✅`, 'success');
     }
 
     function deleteBeat(beat) {
-      if (confirm(`Hapus beat ${beat}?`)) {
+      if (confirm(`Delete beat ${beat}?`)) {
         markedBeats = markedBeats.filter(b => b !== beat);
         renderBeatBoxes(true);
-        showNotification(`Beat ${beat} dihapus!`, 'warning');
+        showNotification(`Beat ${beat} deleted!`, 'warning');
       }
     }
 
@@ -782,7 +782,7 @@
         // Warning jika BPM belum diisi saat load audio
         const bpm = parseFloat(bpmInput.value);
         if (isNaN(bpm) || bpm <= 0) {
-          showNotification('⚠️ Jangan lupa isi nilai BPM sebelum memutar audio!', 'warning');
+          showNotification('⚠️ Don\'t forget to enter BPM value before playing audio!', 'warning');
         }
       }
     });
@@ -796,7 +796,7 @@
       // Check BPM
       if (isNaN(bpm) || bpm <= 0) {
         audio.pause();
-        showNotification('⚠️ Masukkan nilai BPM terlebih dahulu!', 'warning');
+        showNotification('⚠️ Please enter BPM value first!', 'warning');
         bpmInput.focus();
         return;
       }
@@ -804,7 +804,7 @@
       // Check if audio is loaded
       if (audio.duration === 0 || isNaN(audio.duration)) {
         audio.pause();
-        showNotification('⚠️ Audio belum selesai dimuat, tunggu sebentar!', 'warning');
+        showNotification('⚠️ Audio not loaded yet, please wait!', 'warning');
         return;
       }
       
@@ -825,18 +825,18 @@
       
       // Warning untuk berbagai kondisi error
       if (isNaN(bpm) || bpm <= 0) {
-        showNotification('⚠️ Masukkan nilai BPM terlebih dahulu!', 'warning');
+        showNotification('⚠️ Please enter BPM value first!', 'warning');
         bpmInput.focus();
         return;
       }
       
       if (audio.currentTime === 0) {
-        showNotification('⚠️ Putar audio terlebih dahulu atau set posisi audio!', 'warning');
+        showNotification('⚠️ Play audio first or set audio position!', 'warning');
         return;
       }
       
       if (!audio.src) {
-        showNotification('⚠️ Pilih file audio terlebih dahulu!', 'warning');
+        showNotification('⚠️ Please select an audio file first!', 'warning');
         return;
       }
       
@@ -845,9 +845,9 @@
           markedBeats.push(currentBeat);
           markedBeats.sort((a, b) => a - b);
           renderBeatBoxes(true); // Force re-render when adding new beat
-          showNotification(`Beat ${currentBeat} ditandai! 🎯`, 'success');
+          showNotification(`Beat ${currentBeat} marked! 🎯`, 'success');
         } else {
-          showNotification(`Beat ${currentBeat} sudah ditandai sebelumnya!`, 'warning');
+          showNotification(`Beat ${currentBeat} already marked!`, 'warning');
         }
       }
     });
@@ -860,13 +860,13 @@
         // Additional check untuk Space key
         const bpm = parseFloat(bpmInput.value);
         if (isNaN(bpm) || bpm <= 0) {
-          showNotification('⚠️ Masukkan nilai BPM terlebih dahulu!', 'warning');
+          showNotification('⚠️ Please enter BPM value first!', 'warning');
           bpmInput.focus();
           return;
         }
         
         if (!audio.src) {
-          showNotification('⚠️ Pilih file audio terlebih dahulu!', 'warning');
+          showNotification('⚠️ Please select an audio file first!', 'warning');
           return;
         }
         
@@ -875,7 +875,7 @@
       if (e.code === 'KeyE' && e.ctrlKey) {
         e.preventDefault();
         if (markedBeats.length === 0) {
-          showNotification('⚠️ Belum ada beat yang bisa diexport!', 'warning');
+          showNotification('⚠️ No beats to export!', 'warning');
           return;
         }
         exportBtn.click();
@@ -890,7 +890,7 @@
     window.onload = () => {
       bpmInput.focus();
       renderBeatBoxes(true); // Initial render
-      showNotification('Selamat datang! Masukkan BPM dan pilih file audio untuk memulai 🎵');
+      showNotification('Welcome! Enter BPM and select audio file to start 🎵');
     };
 
     // Add touch support for mobile
@@ -907,12 +907,12 @@
       if (diff > 50 && !markBtn.disabled) {
         const bpm = parseFloat(bpmInput.value);
         if (isNaN(bpm) || bpm <= 0) {
-          showNotification('⚠️ Masukkan nilai BPM terlebih dahulu!', 'warning');
+          showNotification('⚠️ Please enter BPM value first!', 'warning');
           return;
         }
         
         if (!audio.src) {
-          showNotification('⚠️ Pilih file audio terlebih dahulu!', 'warning');
+          showNotification('⚠️ Please select an audio file first!', 'warning');
           return;
         }
         
@@ -922,7 +922,7 @@
 
     // Warning saat audio error
     audio.addEventListener('error', () => {
-      showNotification('⚠️ Error memuat file audio! Periksa format file.', 'warning');
+      showNotification('⚠️ Error loading audio file! Check file format.', 'warning');
     });
 
     // Warning saat audio ended unexpectedly
@@ -930,7 +930,7 @@
       clearInterval(interval);
       updateMarkBtnState();
       if (markedBeats.length === 0) {
-        showNotification('🎵 Audio selesai. Tidak ada beat yang tertandai.', 'warning');
+        showNotification('🎵 Audio finished. No beats marked.', 'warning');
       }
     });
 
@@ -938,7 +938,7 @@
     bpmInput.addEventListener('blur', () => {
       const bpm = parseFloat(bpmInput.value);
       if (bpmInput.value && (isNaN(bpm) || bpm <= 0)) {
-        showNotification('⚠️ BPM harus berupa angka positif!', 'warning');
+        showNotification('⚠️ BPM must be a positive number!', 'warning');
         bpmInput.focus();
       }
     });
@@ -947,15 +947,15 @@
   <footer>
     <div style="margin-bottom: 10px;">
       <strong>Keyboard Shortcuts:</strong><br>
-      <span style="color: #38bdf8;">Space</span> - Tandai beat &nbsp;|&nbsp; 
+      <span style="color: #38bdf8;">Space</span> - Mark beat &nbsp;|&nbsp; 
       <span style="color: #38bdf8;">Ctrl+E</span> - Export JSON &nbsp;|&nbsp;
       <span style="color: #38bdf8;">Ctrl+I</span> - Import JSON
     </div>
     <div style="margin-bottom: 10px;">
-      <strong>Mobile:</strong> Swipe up untuk tandai beat
+      <strong>Mobile:</strong> Swipe up to mark beat
     </div>
     <div style="margin-bottom: 10px;">
-      <strong>Beat Actions:</strong> Hover pada beat untuk edit (✏️) atau hapus (×)
+      <strong>Beat Actions:</strong> Hover on beat to edit (✏️) or delete (×)
     </div>
     &copy; 2025 by danyzaky
   </footer>
