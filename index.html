@@ -583,7 +583,8 @@
 
     function updateMarkBtnState() {
       const bpm = parseFloat(bpmInput.value);
-      markBtn.disabled = isNaN(bpm) || bpm <= 0 || audio.paused || audio.currentTime === 0;
+      // Jangan disable saat audio paused
+      markBtn.disabled = isNaN(bpm) || bpm <= 0 || audio.currentTime === 0;
     }
 
     fileInput.addEventListener('change', function () {
