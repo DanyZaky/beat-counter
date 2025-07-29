@@ -767,7 +767,14 @@
           actionsDiv.appendChild(deleteBtn);
           box.appendChild(actionsDiv);
           
-          box.title = `Beat ${beat} - Click to edit or delete`;
+          // Add click listener to jump to beat position
+          box.addEventListener('click', (e) => {
+            // Don't trigger if clicking on action buttons
+            if (e.target.closest('.beat-actions')) return;
+            jumpToBeat(beat);
+          });
+          
+          box.title = `Beat ${beat} - Click to jump to position, hover for edit/delete`;
           beatBoxes.appendChild(box);
         });
       }
@@ -813,6 +820,44 @@
         renderBeatBoxes(true);
         showNotification(`Beat ${beat} deleted!`, 'warning');
       }
+    }
+
+    function jumpToBeat(beat) {
+      const bpm = parseFloat(bpmInput.value);
+      
+      // Check if BPM is set and audio is loaded
+      if (isNaN(bpm) || bpm <= 0) {
+        showNotification('⚠️ Please enter BPM value first!', 'warning');
+        bpmInput.focus();
+        return;
+      }
+      
+      if (!audio.src) {
+        showNotification('⚠️ Please select an audio file first!', 'warning');
+        return;
+      }
+      
+      if (audio.duration === 0 || isNaN(audio.duration)) {
+        showNotification('⚠️ Audio not loaded yet, please wait!', 'warning');
+        return;
+      }
+      
+      // Calculate time position based on beat number and BPM
+      // Beat 1 starts at 0 seconds, so we use (beat - 1)
+      const timePosition = (beat - 1) * 60 / bpm;
+      
+      // Check if calculated time is within audio duration
+      if (timePosition > audio.duration) {
+        showNotification(`⚠️ Beat ${beat} is beyond audio duration (${Math.floor(audio.duration)}s)!`, 'warning');
+        return;
+      }
+      
+      // Set audio position
+      audio.currentTime = timePosition;
+      currentBeat = beat;
+      output.textContent = `Beat: ${currentBeat}`;
+      updateBeatBoxStates();
+      showNotification(`Jumped to beat ${beat} (${timePosition.toFixed(1)}s) 🎯`, 'success');
     }
 
     function updateBeatBoxStates() {
@@ -1041,7 +1086,7 @@
       <strong>Mobile:</strong> Swipe up to mark beat
     </div>
     <div style="margin-bottom: 10px;">
-      <strong>Beat Actions:</strong> Hover on beat to edit (✏️) or delete (×)
+      <strong>Beat Actions:</strong> Click beat to jump to position, hover for edit (✏️) or delete (×)
     </div>
     &copy; 2025 by danyzaky<br>
 <span style="font-size:15px; display:inline-flex; align-items:center; gap:10px;">
