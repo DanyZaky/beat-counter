@@ -218,6 +218,16 @@
       box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
     }
     
+    #manualMarkBtn {
+      background: linear-gradient(45deg, #06b6d4, #0891b2);
+      border-color: #06b6d4;
+    }
+    
+    #manualMarkBtn:not(:disabled):hover {
+      background: #06b6d4;
+      box-shadow: 0 8px 25px rgba(6, 182, 212, 0.4);
+    }
+    
     #notif {
       color: #22c55e;
       font-size: 16px;
@@ -511,6 +521,7 @@
       <button id="markBtn" disabled>📍 Mark This Beat</button>
       <button id="exportBtn">⬇️ Export JSON</button>
       <button id="importBtn">📤 Import JSON</button>
+      <button id="manualMarkBtn">➕ Add Manual Beat</button>
       <input type="file" id="importFile" accept=".json" style="display: none;" />
     </div>
 
@@ -534,6 +545,35 @@
     const exportBtn = document.getElementById('exportBtn');
     const importBtn = document.getElementById('importBtn');
     const importFile = document.getElementById('importFile');
+    const manualMarkBtn = document.getElementById('manualMarkBtn');
+    
+    manualMarkBtn.addEventListener('click', () => {
+      const beatValue = prompt('Enter beat number to mark:', '');
+      if (beatValue === null) return; // User cancelled
+      
+      // Validation for empty input
+      if (beatValue.trim() === '') {
+        showNotification('⚠️ Beat number cannot be empty!', 'warning');
+        return;
+      }
+      
+      const beat = parseInt(beatValue);
+      if (isNaN(beat) || beat <= 0) {
+        showNotification('⚠️ Beat must be a positive number!', 'warning');
+        return;
+      }
+      
+      if (markedBeats.includes(beat)) {
+        showNotification(`⚠️ Beat ${beat} already exists!`, 'warning');
+        return;
+      }
+      
+      // Add the beat manually
+      markedBeats.push(beat);
+      markedBeats.sort((a, b) => a - b);
+      renderBeatBoxes(true);
+      showNotification(`Beat ${beat} added manually! ✅`, 'success');
+    });
     
     exportBtn.addEventListener('click', () => {
       if (markedBeats.length === 0) {
@@ -925,6 +965,10 @@
         e.preventDefault();
         importBtn.click();
       }
+      if (e.code === 'KeyM' && e.ctrlKey) {
+        e.preventDefault();
+        manualMarkBtn.click();
+      }
     });
 
     // Autofocus BPM input on load
@@ -990,7 +1034,8 @@
       <strong>Keyboard Shortcuts:</strong><br>
       <span style="color: #38bdf8;">Space</span> - Mark beat &nbsp;|&nbsp; 
       <span style="color: #38bdf8;">Ctrl+E</span> - Export JSON &nbsp;|&nbsp;
-      <span style="color: #38bdf8;">Ctrl+I</span> - Import JSON
+      <span style="color: #38bdf8;">Ctrl+I</span> - Import JSON &nbsp;|&nbsp;
+      <span style="color: #38bdf8;">Ctrl+M</span> - Add Manual Beat
     </div>
     <div style="margin-bottom: 10px;">
       <strong>Mobile:</strong> Swipe up to mark beat
